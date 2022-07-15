@@ -1,0 +1,91 @@
+import cv2
+import numpy as np
+
+
+def create_bar(height, width, color):
+    bar = np.zeros((height, width, 3), np.uint8)
+    bar[:] = color
+    red, green, blue =int(color[2]), int(color[1]), int(color[0])
+    return bar, (red, green,blue)
+
+
+img =cv2.imread('H:/computer vision & IOT/task1/by %/samples/leaves.jpg')
+cv2.imshow('flowers',img)
+height, width, _ = np.shape(img)
+print(height,width,_)
+
+
+data = np.reshape(img ,(height*width,3))
+data = np.float32(data)
+print(data)
+
+if(width>height):
+   number_clusters=10
+else :
+   number_clusters=6
+
+
+criteria=(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER,10 ,1.0)
+flags =cv2.KMEANS_RANDOM_CENTERS
+compactness, lebels, centers = cv2.kmeans(data,number_clusters, None , criteria , 50 , flags)
+
+
+fy = []
+ff = 0
+for x in range(number_clusters):
+    lower = np.array([centers[x][0] - 5, centers[x][1] - 5, centers[x][2] - 5])
+    upper = np.array([centers[x][0] + 5, centers[x][1] + 5, centers[x][2] + 5])
+    first_px = np.where(cv2.inRange(img, lower, upper))
+    fy.append(len(first_px[0]))
+    ff = ff+len(first_px[0])
+
+
+p=[]
+for x in range(number_clusters):
+    p.append(float(fy[x]/ff))
+
+
+bars = []
+RGB_values = []
+for index, row in enumerate(centers):
+    bar, rgb = create_bar(200, 200, row)
+    bars.append(bar)
+    RGB_values.append(rgb)
+
+
+
+for x in range(number_clusters):
+    for xx in range(number_clusters):
+        if(fy[x]<fy[xx]):
+            t=p[x]
+            p[x]=p[xx]
+            p[xx]=t
+            temp=fy[x]
+            fy[x]=fy[xx]
+            fy[xx]=temp
+            bar=bars[x]
+            bars[x]=bars[xx]
+            bars[xx]=bar
+
+
+def RGBToHex(r):
+  return '#%02X%02X%02X' % (r[0],r[1],r[2])
+
+for k in range(number_clusters):
+    cv2.putText(bars[k],str(round(p[k]*100,3))+"%", ( 5, 200-10),2,1,(255,255,255) )
+    print(RGBToHex(RGB_values[k]))
+
+
+if(width>height):
+    img_bar = np.hstack(bars)
+    img_bar=cv2.resize(img_bar,(width,int(height/5)))
+    im=cv2.vconcat([img,img_bar])
+else:
+    img_bar = np.vstack(bars)
+    img_bar = cv2.resize(img_bar, (int(width/5), height))
+    im = cv2.hconcat([img_bar, img])
+
+
+cv2.imwrite('H:/computer vision & IOT/task1/by %/samples/66.jpg',im)
+cv2.imshow('d',im)
+cv2.waitKey(0)
